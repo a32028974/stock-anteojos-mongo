@@ -55,6 +55,37 @@ app.get("/api/busqueda-avanzada", async (req, res) => {
   }
 });
 
+// 📦 Marcar producto como vendido con vendedor
+app.post("/api/vender", async (req, res) => {
+  const { id, vendedor } = req.body;
+
+  if (!id || !vendedor) {
+    return res.status(400).json({ error: "Faltan datos: id y vendedor son requeridos" });
+  }
+
+  try {
+    const producto = await Producto.findOneAndUpdate(
+      { "N ANTEOJO": parseInt(id) },
+      {
+        $set: {
+          FECHA_DE_VENTA: new Date().toISOString(),
+          VENDEDOR: vendedor,
+        },
+      },
+      { new: true }
+    );
+
+    if (!producto) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    res.json({ mensaje: "Producto marcado como vendido", producto });
+  } catch (err) {
+    console.error("❌ Error marcando como vendido:", err.message);
+    res.status(500).json({ error: "Error actualizando producto", detalle: err.message });
+  }
+});
+
 // 🧪 Ruta de prueba para ver algunos productos
 app.get("/api/todo", async (req, res) => {
   try {
