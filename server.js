@@ -6,23 +6,22 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ MongoDB Atlas URI
+// 🔌 Conexión a MongoDB Atlas
 const MONGO_URI = "mongodb+srv://juan:juan6980@cluster0.5pzpxts.mongodb.net/opticacristal?retryWrites=true&w=majority";
-
-// 🔌 Conexión a MongoDB
 mongoose.connect(MONGO_URI)
   .then(() => console.log("🟢 Conectado a MongoDB"))
   .catch((err) => console.error("🔴 Error conectando a MongoDB:", err));
 
+// Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // Sirve archivos HTML, CSS, etc.
+app.use(express.static(path.join(__dirname, "public"))); // Sirve HTML, CSS, JS
 
-// 🧾 Esquema flexible (permite todos los campos)
+// 📦 Esquema de Producto (flexible)
 const productoSchema = new mongoose.Schema({}, { strict: false });
 const Producto = mongoose.model("Producto", productoSchema);
 
-// 🔍 Búsqueda POST (usada por el HTML)
+// 🔍 Búsqueda por N° Anteojo o Código de Barras
 app.post("/api/buscar", async (req, res) => {
   const { id, codigo } = req.body;
   let filtro = {};
@@ -39,7 +38,24 @@ app.post("/api/buscar", async (req, res) => {
   }
 });
 
-// 🔎 Ruta de prueba para ver productos
+// 🔎 Búsqueda avanzada por marca o modelo (parcial, insensible a mayúsculas)
+app.get("/api/busqueda-avanzada", async (req, res) => {
+  const { marca, modelo } = req.query;
+  let filtro = {};
+
+  if (marca) filtro["MARCA"] = { $regex: marca, $options: "i" };
+  if (modelo) filtro["MODELO"] = { $regex: modelo, $options: "i" };
+
+  try {
+    const resultados = await Producto.find(filtro).limit(10);
+    res.json(resultados);
+  } catch (err) {
+    console.error("❌ Error en búsqueda avanzada:", err.message);
+    res.status(500).json({ error: "Error en búsqueda avanzada", detalle: err.message });
+  }
+});
+
+// 🧪 Ruta de prueba para ver algunos productos
 app.get("/api/todo", async (req, res) => {
   try {
     const docs = await Producto.find({}).limit(3);
