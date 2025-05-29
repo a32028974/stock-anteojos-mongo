@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <h1>🔍 Buscador de Anteojos</h1>
+  <h1>🔍 Buscador de Anteojos v 29.5 18.27</h1>
 
   <input type="number" id="n_anteojo" placeholder="N° Anteojo">
   <input type="number" id="codigo" placeholder="Código de Barras">
@@ -54,25 +54,32 @@
     });
 
     function toggleAvanzado() {
-      document.querySelector('.avanzado').style.display =
-        document.querySelector('.avanzado').style.display === 'none' ? 'block' : 'none';
+      const avanzado = document.querySelector('.avanzado');
+      avanzado.style.display = (avanzado.style.display === 'none' || !avanzado.style.display) ? 'block' : 'none';
     }
 
     async function buscarProducto() {
       const anteojo = document.getElementById("n_anteojo").value;
       const codigo = document.getElementById("codigo").value;
-      let url = "https://stock-anteojos-mongo.onrender.com/api/productos?";
-      if (anteojo) url += `anteojo=${anteojo}`;
-      if (codigo) url += `&codigo=${codigo}`;
 
       try {
-        const res = await fetch(url);
+        const res = await fetch("https://stock-anteojos-mongo.onrender.com/api/buscar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: anteojo || null,
+            codigo: codigo || null,
+          }),
+        });
+
         const data = await res.json();
 
         if (data.error) {
           document.getElementById("resultado").innerHTML = `<strong style="color:red;">${data.error}</strong>`;
+        } else if (!data.length) {
+          document.getElementById("resultado").innerHTML = `<strong style="color:red;">Sin coincidencias</strong>`;
         } else {
-          mostrarResultado(data);
+          document.getElementById("resultado").innerHTML = data.map(d => formatearProducto(d)).join("<hr>");
         }
       } catch (err) {
         document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
@@ -112,10 +119,6 @@
       }
       html += "</ul>";
       return html;
-    }
-
-    function mostrarResultado(data) {
-      document.getElementById("resultado").innerHTML = `<h3>Resultado</h3>${formatearProducto(data)}`;
     }
   </script>
 </body>
