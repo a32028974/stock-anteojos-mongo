@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Buscador de Productos</title>
+  <title>Buscador de Anteojos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,31 +33,50 @@
   <div id="resultado" class="resultado"></div>
 
   <script>
+    const BASE_URL = "https://stock-anteojos-mongo.onrender.com/api/buscar";
+
     async function buscarProducto() {
       const anteojo = document.getElementById("n_anteojo").value;
       const codigo = document.getElementById("codigo").value;
-      let url = "http://localhost:3000/api/productos?";
-      if (anteojo) url += `anteojo=${anteojo}`;
-      if (codigo) url += `codigo=${codigo}`;
+
+      if (!anteojo && !codigo) {
+        document.getElementById("resultado").innerHTML = `<strong style="color:red;">Ingresá al menos un dato</strong>`;
+        return;
+      }
 
       try {
-        const res = await fetch(url);
+        const res = await fetch(BASE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: anteojo,
+            codigo: codigo
+          })
+        });
+
         const data = await res.json();
 
-        if (data.error) {
-          document.getElementById("resultado").innerHTML = `<strong style="color:red;">${data.error}</strong>`;
+        if (!data || data.length === 0) {
+          document.getElementById("resultado").innerHTML = `<strong style="color:red;">Producto no encontrado</strong>`;
         } else {
-          let html = "<h3>Producto encontrado</h3><ul>";
-          for (let key in data) {
-            html += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+          let html = "<h3>Resultado</h3><ul>";
+          for (let key in data[0]) {
+            html += `<li><strong>${key}:</strong> ${data[0][key]}</li>`;
           }
           html += "</ul>";
           document.getElementById("resultado").innerHTML = html;
         }
+
       } catch (err) {
+        console.error(err);
         document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
       }
     }
+
+    // ⌨️ Presionar ENTER también busca
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") buscarProducto();
+    });
   </script>
 </body>
 </html>
