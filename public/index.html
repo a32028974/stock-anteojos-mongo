@@ -3,76 +3,119 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Buscador de Anteojos c&push</title>
+  <title>Buscador de Anteojos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      padding: 2rem;
+      margin: 2rem;
+      background-color: #f9f9f9;
     }
     h1 {
-      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     input, button {
-      padding: 0.6rem;
+      padding: 0.5rem;
       margin: 0.5rem;
-      font-size: 1rem;
     }
     .resultado {
-      background: #fff;
+      background: white;
       padding: 1rem;
-      margin-top: 1rem;
       border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      margin-top: 1rem;
+      box-shadow: 0 0 5px #ccc;
     }
-    .error {
-      color: red;
-      font-weight: bold;
+    .avanzado {
+      margin-top: 1rem;
+      display: none;
     }
   </style>
 </head>
 <body>
   <h1>🔍 Buscador de Anteojos</h1>
 
-  <form onsubmit="buscarProducto(event)">
-    <input type="number" id="n_anteojo" placeholder="N° Anteojo" />
-    <input type="number" id="codigo" placeholder="Código de Barras" />
-    <button type="submit">Buscar</button>
-  </form>
+  <input type="number" id="n_anteojo" placeholder="N° Anteojo">
+  <input type="number" id="codigo" placeholder="Código de Barras">
+  <button onclick="buscarProducto()">Buscar</button>
+  <button onclick="toggleAvanzado()">Avanzado</button>
+
+  <div class="avanzado">
+    <input type="text" id="marca" placeholder="Marca (parcial)">
+    <input type="text" id="modelo" placeholder="Modelo (parcial)">
+    <button onclick="buscarAvanzado()">Buscar por Marca/Modelo</button>
+  </div>
 
   <div id="resultado" class="resultado"></div>
 
   <script>
-    async function buscarProducto(event) {
-      event.preventDefault(); // Evita recarga de página
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") buscarProducto();
+    });
 
+    function toggleAvanzado() {
+      document.querySelector('.avanzado').style.display =
+        document.querySelector('.avanzado').style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function buscarProducto() {
       const anteojo = document.getElementById("n_anteojo").value;
       const codigo = document.getElementById("codigo").value;
-      let url = "/api/productos?";
-
+      let url = "https://stock-anteojos-mongo.onrender.com/api/productos?";
       if (anteojo) url += `anteojo=${anteojo}`;
-      if (codigo) url += `${anteojo ? "&" : ""}codigo=${codigo}`;
+      if (codigo) url += `&codigo=${codigo}`;
 
       try {
         const res = await fetch(url);
         const data = await res.json();
 
-        const div = document.getElementById("resultado");
-
-        if (!res.ok) {
-          div.innerHTML = `<p class="error">${data.error || "Error en la búsqueda"}</p>`;
-          return;
+        if (data.error) {
+          document.getElementById("resultado").innerHTML = `<strong style="color:red;">${data.error}</strong>`;
+        } else {
+          mostrarResultado(data);
         }
-
-        let html = "<h3>Producto encontrado</h3><ul>";
-        for (let key in data) {
-          html += `<li><strong>${key}:</strong> ${data[key]}</li>`;
-        }
-        html += "</ul>";
-        div.innerHTML = html;
-      } catch (error) {
-        document.getElementById("resultado").innerHTML = `<p class="error">Error de conexión</p>`;
+      } catch (err) {
+        document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
       }
+    }
+
+    async function buscarAvanzado() {
+      const marca = document.getElementById("marca").value;
+      const modelo = document.getElementById("modelo").value;
+      let url = "https://stock-anteojos-mongo.onrender.com/api/busqueda-avanzada?";
+      if (marca) url += `marca=${marca}`;
+      if (modelo) url += `&modelo=${modelo}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.length) {
+          document.getElementById("resultado").innerHTML = `<strong style="color:red;">Sin coincidencias</strong>`;
+        } else {
+          document.getElementById("resultado").innerHTML =
+            data.map(d => formatearProducto(d)).join("<hr>");
+        }
+      } catch (err) {
+        document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
+      }
+    }
+
+    function formatearProducto(data) {
+      let html = "<ul>";
+      for (let key in data) {
+        if (key === "_id" || key === "__v") continue;
+        if (!data[key]) continue;
+        if (key.includes("FECHA") && data[key]) {
+          data[key] = new Date(data[key]).toLocaleDateString();
+        }
+        html += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+      }
+      html += "</ul>";
+      return html;
+    }
+
+    function mostrarResultado(data) {
+      document.getElementById("resultado").innerHTML = `<h3>Resultado</h3>${formatearProducto(data)}`;
     }
   </script>
 </body>
