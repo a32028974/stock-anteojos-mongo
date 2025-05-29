@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Buscador de Productos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f4f4f4;
+    }
+    input, button {
+      padding: 0.5rem;
+      margin: 0.5rem;
+    }
+    .resultado {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      box-shadow: 0 0 5px #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Buscador de Anteojos</h1>
+
+  <input type="number" id="n_anteojo" placeholder="N° Anteojo">
+  <input type="number" id="codigo" placeholder="Código de Barras">
+  <button onclick="buscarProducto()">Buscar</button>
+
+  <div id="resultado" class="resultado"></div>
+
+  <script>
+    async function buscarProducto() {
+      const anteojo = document.getElementById("n_anteojo").value;
+      const codigo = document.getElementById("codigo").value;
+      let url = "http://localhost:3000/api/productos?";
+      if (anteojo) url += `anteojo=${anteojo}`;
+      if (codigo) url += `codigo=${codigo}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById("resultado").innerHTML = `<strong style="color:red;">${data.error}</strong>`;
+        } else {
+          let html = "<h3>Producto encontrado</h3><ul>";
+          for (let key in data) {
+            html += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+          }
+          html += "</ul>";
+          document.getElementById("resultado").innerHTML = html;
+        }
+      } catch (err) {
+        document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
+      }
+    }
+  </script>
+</body>
+</html>
