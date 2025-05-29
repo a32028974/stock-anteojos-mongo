@@ -3,80 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Buscador de Anteojos</title>
+  <title>Buscador de Anteojos c&push</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 2rem;
       background-color: #f4f4f4;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.8rem;
     }
     input, button {
-      padding: 0.5rem;
+      padding: 0.6rem;
       margin: 0.5rem;
+      font-size: 1rem;
     }
     .resultado {
-      background: white;
+      background: #fff;
       padding: 1rem;
-      border-radius: 8px;
       margin-top: 1rem;
-      box-shadow: 0 0 5px #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .error {
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h1>🔍 Buscador de Anteojos</h1>
 
-  <input type="number" id="n_anteojo" placeholder="N° Anteojo">
-  <input type="number" id="codigo" placeholder="Código de Barras">
-  <button onclick="buscarProducto()">Buscar</button>
+  <form onsubmit="buscarProducto(event)">
+    <input type="number" id="n_anteojo" placeholder="N° Anteojo" />
+    <input type="number" id="codigo" placeholder="Código de Barras" />
+    <button type="submit">Buscar</button>
+  </form>
 
   <div id="resultado" class="resultado"></div>
 
   <script>
-    const BASE_URL = "https://stock-anteojos-mongo.onrender.com/api/buscar";
+    async function buscarProducto(event) {
+      event.preventDefault(); // Evita recarga de página
 
-    async function buscarProducto() {
       const anteojo = document.getElementById("n_anteojo").value;
       const codigo = document.getElementById("codigo").value;
+      let url = "/api/productos?";
 
-      if (!anteojo && !codigo) {
-        document.getElementById("resultado").innerHTML = `<strong style="color:red;">Ingresá al menos un dato</strong>`;
-        return;
-      }
+      if (anteojo) url += `anteojo=${anteojo}`;
+      if (codigo) url += `${anteojo ? "&" : ""}codigo=${codigo}`;
 
       try {
-        const res = await fetch(BASE_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: anteojo,
-            codigo: codigo
-          })
-        });
-
+        const res = await fetch(url);
         const data = await res.json();
 
-        if (!data || data.length === 0) {
-          document.getElementById("resultado").innerHTML = `<strong style="color:red;">Producto no encontrado</strong>`;
-        } else {
-          let html = "<h3>Resultado</h3><ul>";
-          for (let key in data[0]) {
-            html += `<li><strong>${key}:</strong> ${data[0][key]}</li>`;
-          }
-          html += "</ul>";
-          document.getElementById("resultado").innerHTML = html;
+        const div = document.getElementById("resultado");
+
+        if (!res.ok) {
+          div.innerHTML = `<p class="error">${data.error || "Error en la búsqueda"}</p>`;
+          return;
         }
 
-      } catch (err) {
-        console.error(err);
-        document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
+        let html = "<h3>Producto encontrado</h3><ul>";
+        for (let key in data) {
+          html += `<li><strong>${key}:</strong> ${data[key]}</li>`;
+        }
+        html += "</ul>";
+        div.innerHTML = html;
+      } catch (error) {
+        document.getElementById("resultado").innerHTML = `<p class="error">Error de conexión</p>`;
       }
     }
-
-    // ⌨️ Presionar ENTER también busca
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") buscarProducto();
-    });
   </script>
 </body>
 </html>
