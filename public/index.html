@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Buscador de Anteojos</title>
+  <title>Buscador de Anteojos v 29.5 18.57</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -48,6 +48,12 @@
 
   <div id="resultado" class="resultado"></div>
 
+  <!-- Área para marcar como vendido -->
+  <div id="venderBox" style="display:none; margin-top: 1rem;">
+    <input type="text" id="vendedor" placeholder="Nombre del vendedor">
+    <button onclick="marcarComoVendido()">Marcar como Vendido</button>
+  </div>
+
   <script>
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") buscarProducto();
@@ -76,13 +82,16 @@
 
         if (data.error) {
           document.getElementById("resultado").innerHTML = `<strong style="color:red;">${data.error}</strong>`;
+          document.getElementById("venderBox").style.display = "none";
         } else if (!data.length) {
           document.getElementById("resultado").innerHTML = `<strong style="color:red;">Sin coincidencias</strong>`;
+          document.getElementById("venderBox").style.display = "none";
         } else {
-          document.getElementById("resultado").innerHTML = data.map(d => formatearProducto(d)).join("<hr>");
+          mostrarResultado(data);
         }
       } catch (err) {
         document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
+        document.getElementById("venderBox").style.display = "none";
       }
     }
 
@@ -98,12 +107,15 @@
         const data = await res.json();
         if (!data.length) {
           document.getElementById("resultado").innerHTML = `<strong style="color:red;">Sin coincidencias</strong>`;
+          document.getElementById("venderBox").style.display = "none";
         } else {
           document.getElementById("resultado").innerHTML =
             data.map(d => formatearProducto(d)).join("<hr>");
+          document.getElementById("venderBox").style.display = "none";
         }
       } catch (err) {
         document.getElementById("resultado").innerHTML = `<strong style="color:red;">Error de conexión</strong>`;
+        document.getElementById("venderBox").style.display = "none";
       }
     }
 
@@ -119,6 +131,43 @@
       }
       html += "</ul>";
       return html;
+    }
+
+    function mostrarResultado(data) {
+      document.getElementById("resultado").innerHTML = `<h3>Resultado</h3>${formatearProducto(data[0])}`;
+      document.getElementById("venderBox").style.display = "block";
+    }
+
+    async function marcarComoVendido() {
+      const anteojo = document.getElementById("n_anteojo").value;
+      const vendedor = document.getElementById("vendedor").value;
+
+      if (!anteojo || !vendedor) {
+        alert("Debés ingresar el N° de anteojo y el nombre del vendedor.");
+        return;
+      }
+
+      try {
+        const res = await fetch("https://stock-anteojos-mongo.onrender.com/api/vender", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: anteojo,
+            vendedor: vendedor.toUpperCase(),
+          }),
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          alert("❌ " + data.error);
+        } else {
+          alert("✅ Anteojo marcado como vendido.");
+          buscarProducto(); // actualiza vista
+        }
+      } catch (err) {
+        alert("❌ Error de conexión");
+      }
     }
   </script>
 </body>
