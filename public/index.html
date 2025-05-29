@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Buscador de Anteojos v 29.5 18.57</title>
+  <title>Buscador de Anteojos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-  <h1>🔍 Buscador de Anteojos v 29.5 18.32</h1>
+  <h1>🔍 Buscador de Anteojos v29.5.19.31</h1>
 
   <input type="number" id="n_anteojo" placeholder="N° Anteojo">
   <input type="number" id="codigo" placeholder="Código de Barras">
@@ -48,10 +48,11 @@
 
   <div id="resultado" class="resultado"></div>
 
-  <!-- Área para marcar como vendido -->
   <div id="venderBox" style="display:none; margin-top: 1rem;">
     <input type="text" id="vendedor" placeholder="Nombre del vendedor">
+    <input type="text" id="observaciones" placeholder="Observaciones">
     <button onclick="marcarComoVendido()">Marcar como Vendido</button>
+    <button onclick="anularVenta()">Anular Venta</button>
   </div>
 
   <script>
@@ -72,10 +73,7 @@
         const res = await fetch("https://stock-anteojos-mongo.onrender.com/api/buscar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: anteojo || null,
-            codigo: codigo || null,
-          }),
+          body: JSON.stringify({ id: anteojo || null, codigo: codigo || null }),
         });
 
         const data = await res.json();
@@ -141,6 +139,7 @@
     async function marcarComoVendido() {
       const anteojo = document.getElementById("n_anteojo").value;
       const vendedor = document.getElementById("vendedor").value;
+      const observaciones = document.getElementById("observaciones").value;
 
       if (!anteojo || !vendedor) {
         alert("Debés ingresar el N° de anteojo y el nombre del vendedor.");
@@ -154,6 +153,7 @@
           body: JSON.stringify({
             id: anteojo,
             vendedor: vendedor.toUpperCase(),
+            observaciones: observaciones || ""
           }),
         });
 
@@ -163,7 +163,38 @@
           alert("❌ " + data.error);
         } else {
           alert("✅ Anteojo marcado como vendido.");
-          buscarProducto(); // actualiza vista
+          buscarProducto();
+        }
+      } catch (err) {
+        alert("❌ Error de conexión");
+      }
+    }
+
+    async function anularVenta() {
+      const anteojo = document.getElementById("n_anteojo").value;
+
+      if (!anteojo) {
+        alert("Debés ingresar el N° de anteojo.");
+        return;
+      }
+
+      const confirmar = confirm("¿Seguro que querés anular la venta?");
+      if (!confirmar) return;
+
+      try {
+        const res = await fetch("https://stock-anteojos-mongo.onrender.com/api/anular-venta", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: anteojo }),
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          alert("❌ " + data.error);
+        } else {
+          alert("✅ Venta anulada.");
+          buscarProducto();
         }
       } catch (err) {
         alert("❌ Error de conexión");
